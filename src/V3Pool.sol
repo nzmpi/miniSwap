@@ -18,12 +18,12 @@ contract V3Pool is Errors, Events {
   int24 constant MIN_TICK = -887272;
   int24 constant MAX_TICK = 887272;
 
-  uint160 sqrtPriceX96;
-  int24 tick;
-  uint128 liquidity;
+  uint160 public sqrtPriceX96;
+  int24 public tick;
+  uint128 public liquidity;
 
-  mapping (bytes32 => PositionLib.Position) positions;
-  mapping (int24 => TickLib.Tick) ticks;
+  mapping (bytes32 => PositionLib.Position) public positions;
+  mapping (int24 => TickLib.Tick) public ticks;
   
   constructor(
     address _token0, 
@@ -62,7 +62,7 @@ contract V3Pool is Errors, Events {
 
     position.update(amount);
 
-    amount0 = 0.998976618347425280 ether;
+    amount0 = 0.99897661834742528 ether;
     amount1 = 5000 ether;
 
     liquidity += amount;
@@ -73,15 +73,13 @@ contract V3Pool is Errors, Events {
     if (amount1 > 0) balance1Before = balance(1);
 
     IV3MintCallback(msg.sender).v3MintCallback(
-        amount0,
-        amount1
+      amount0,
+      amount1
     );
     if (amount0 > 0 && balance0Before + amount0 > balance(0))
-        revert InsufficientInputAmount();
+      revert InsufficientInputAmount();
     if (amount1 > 0 && balance1Before + amount1 > balance(1))
-        revert InsufficientInputAmount();
-
-    
+      revert InsufficientInputAmount();    
 
     emit Mint(
       msg.sender, 
