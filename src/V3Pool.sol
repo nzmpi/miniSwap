@@ -13,7 +13,7 @@ contract V3Pool is Errors, Events {
   using PositionLib for mapping (bytes32 => PositionLib.Position);
   using PositionLib for PositionLib.Position;
 
-  address immutable public token0;
+  address immutable public token0; 
   address immutable public token1;
   int24 constant MIN_TICK = -887272;
   int24 constant MAX_TICK = 887272;
