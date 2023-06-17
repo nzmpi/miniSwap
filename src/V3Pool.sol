@@ -6,7 +6,8 @@ import "./lib/Errors.sol";
 import "./lib/TickLib.sol";
 import "./lib/PositionLib.sol";
 import "./interfaces/IV3MintCallback.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IV3SwapCallback.sol";
+import "solmate/tokens/ERC20.sol";
 
 contract V3Pool is Errors, Events {
   using TickLib for mapping (int24 => TickLib.Tick);
@@ -24,6 +25,12 @@ contract V3Pool is Errors, Events {
 
   mapping (bytes32 => PositionLib.Position) public positions;
   mapping (int24 => TickLib.Tick) public ticks;
+
+  struct CallbackData {
+    address token0;
+    address token1;
+    address sender;
+  }
   
   constructor(
     address _token0, 
@@ -41,7 +48,8 @@ contract V3Pool is Errors, Events {
     address owner,
     uint128 amount,
     int24 tickLow,
-    int24 tickHigh
+    int24 tickHigh,
+    bytes calldata data
   ) external returns (uint256 amount0, uint256 amount1) {
     if (
       tickLow < MIN_TICK ||
@@ -74,7 +82,8 @@ contract V3Pool is Errors, Events {
 
     IV3MintCallback(msg.sender).v3MintCallback(
       amount0,
-      amount1
+      amount1,
+      data
     );
     if (amount0 > 0 && balance0Before + amount0 > balance(0))
       revert InsufficientInputAmount();
@@ -93,9 +102,42 @@ contract V3Pool is Errors, Events {
 
   }
 
+  function swap(address receiver, bytes calldata data) external returns (int256 amount0, int256 amount1) {
+    int24 nextTick = 85184;
+    uint160 nextPrice = 5604469350942327889444743441197;
+    amount0 = -0.008396714242162444 ether;
+    amount1 = 42 ether;
+
+    tick = nextTick;
+    sqrtPriceX96 = nextPrice;
+
+    ERC20(token0).transfer(receiver, uint256(-amount0));
+
+    uint256 balance1Before = balance(1);
+    IV3SwapCallback(msg.sender).v3SwapCallback(
+      amount0,
+      amount1,
+      data
+    );
+
+    if (balance1Before + uint256(amount1) < balance(1))
+      revert InsufficientInputAmount();
+
+    emit Swap(
+      msg.sender, 
+      receiver, 
+      amount0, 
+      amount1, 
+      nextPrice, 
+      nextTick, 
+      liquidity
+    );
+
+  }
+
   function balance(uint256 tokenIndex) internal view returns (uint256) {
-    if (tokenIndex == 0) return IERC20(token0).balanceOf(address(this));
-    else return IERC20(token1).balanceOf(address(this));
+    if (tokenIndex == 0) return ERC20(token0).balanceOf(address(this));
+    else return ERC20(token1).balanceOf(address(this));
   }
 
 
