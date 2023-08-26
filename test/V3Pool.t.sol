@@ -2,12 +2,12 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import "./ERC20Mintable.sol";
+import "./ERC20Test.sol";
 import { V3Pool } from "../src/V3Pool.sol";
 
 contract V3PoolTest is Test {
-  /*ERC20Mintable token0;
-  ERC20Mintable token1;
+  ERC20Test token0;
+  ERC20Test token1;
   V3Pool pool;
   bool shouldTransferInCallback;
 
@@ -18,21 +18,20 @@ contract V3PoolTest is Test {
     int24 tickLow;
     int24 tickHigh;
     uint128 liquidity;
-    bool shouldTransferInCallback;
+    bool shouldTransferInCallback_;
     bool mintLiquidity;
     uint160 currentSqrtP;
-  }*/
+  }
 
+  /**
+   * @dev Set up test cases
+   */
   function setUp() public {
-    /*token0 = new ERC20Mintable("token0", "t0", 18);
-    token1 = new ERC20Mintable("token1", "t1", 18);*/
+    token0 = new ERC20Test("token0", "t0", 18);
+    token1 = new ERC20Test("token1", "t1", 18);
   }
 
-  function testEx() public {
-    assertTrue(true);
-  }
-
-  /*function testMintSuccess() public {
+  function testNewMint() public {
     TestParams memory params = TestParams({
       token0Balance: 1 ether,
       token1Balance: 5000 ether,
@@ -40,7 +39,7 @@ contract V3PoolTest is Test {
       tickLow: 84222,
       tickHigh: 86129,
       liquidity: 1517882343751509868544,
-      shouldTransferInCallback: true,
+      shouldTransferInCallback_: true,
       mintLiquidity: true,
       currentSqrtP: 5602277097478614198912276234240
     });
@@ -53,7 +52,7 @@ contract V3PoolTest is Test {
     assertEq(poolBalance1, expectedAmount1, "Incorrect poolbalance1");assertEq(token0.balanceOf(address(pool)), expectedAmount0);
     assertEq(token1.balanceOf(address(pool)), expectedAmount1);
 
-    bytes32 positionKey = keccak256(abi.encode(
+    bytes32 positionKey = keccak256(abi.encodePacked(
       address(this),
       params.tickLow,
       params.tickHigh
@@ -63,10 +62,10 @@ contract V3PoolTest is Test {
 
     (bool tickInitialized, uint128 tickLiquidity) = pool.ticks(params.tickLow);
     assertTrue(tickInitialized);
-    assertEq(tickLiquidity, params.liquidity, "Incorrect tickLow");
+    assertEq(tickLiquidity, params.liquidity, "Incorrect Liquidity tickLow");
     (tickInitialized, tickLiquidity) = pool.ticks(params.tickHigh);
     assertTrue(tickInitialized);
-    assertEq(tickLiquidity, params.liquidity, "Incorrect tickHigh");
+    assertEq(tickLiquidity, params.liquidity, "Incorrect Liquidity tickHigh");
 
     assertEq(pool.sqrtPriceX96(), 5602277097478614198912276234240, "Incorrect sqrtPriceX96");
     assertEq(pool.tick(), 85176, "Incorrect tick");
@@ -74,7 +73,7 @@ contract V3PoolTest is Test {
 
   }
 
-  function testSwapBuyToken0() public {
+  /*function testSwapBuyToken0() public {
     TestParams memory params = TestParams({
       token0Balance: 1 ether,
       token1Balance: 5000 ether,
@@ -133,7 +132,7 @@ contract V3PoolTest is Test {
       1517882343751509868544,
       "Wrong liquidity"
     );
-  }
+  }*/
 
 
   function setupTest(TestParams memory params) internal returns (
@@ -150,7 +149,8 @@ contract V3PoolTest is Test {
       params.currentSqrtP
     );
 
-    shouldTransferInCallback = params.shouldTransferInCallback;
+    shouldTransferInCallback = params.shouldTransferInCallback_;
+    
     bytes memory data = abi.encodePacked(
       address(token0),
       address(token1),
@@ -172,9 +172,9 @@ contract V3PoolTest is Test {
     uint256 amount0, 
     uint256 amount1,
     bytes calldata data
-  ) public {
+  ) external {
     if (shouldTransferInCallback) {
-      V3Pool.CallbackData memory callbackData = abi.decode(
+      /*V3Pool.CallbackData memory callbackData = abi.decode(
         data,
         (V3Pool.CallbackData)
       );
@@ -188,11 +188,13 @@ contract V3PoolTest is Test {
         callbackData.sender, 
         msg.sender,
         amount1
-      );
+      );*/
+      token0.transfer(msg.sender, amount0);
+      token1.transfer(msg.sender, amount1);
     }
   }
 
-  function v3SwapCallback(
+  /*function v3SwapCallback(
     int256 amount0, 
     int256 amount1,
     bytes calldata data

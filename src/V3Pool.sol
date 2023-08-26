@@ -103,7 +103,7 @@ contract V3Pool is Errors, Events {
 
   }
 
-  function swap(address receiver, bytes calldata data) external returns (int256 amount0, int256 amount1) {
+  /*function swap(address receiver, bytes calldata data) external returns (int256 amount0, int256 amount1) {
     int24 nextTick = 85184;
     uint160 nextPrice = 5604469350942327889444743441197;
     amount0 = -0.008396714242162444 ether;
@@ -134,7 +134,7 @@ contract V3Pool is Errors, Events {
       liquidity
     );
 
-  }
+  }*/
 
   function balance(uint256 tokenIndex) internal view returns (uint256) {
     if (tokenIndex == 0) return IERC20(token0).balanceOf(address(this));

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import "./V3Pool.sol";
 
-contract V3Manager {
+contract V3Router {
 
-  function mint(
+  /*function mint(
     address pool,
     int24 tickLow,
     int24 tickHigh,
@@ -72,5 +72,5 @@ contract V3Manager {
         uint256(amount1)
       );
     }
-  }
+  }*/
 }
