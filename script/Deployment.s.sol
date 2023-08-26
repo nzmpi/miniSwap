@@ -2,12 +2,12 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
-import "../test/ERC20Mintable.sol";
+/*import "../test/ERC20Mintable.sol";
 import { V3Pool } from "../src/V3Pool.sol";
-import { V3Manager } from "../src/V3Manager.sol";
+import { V3Manager } from "../src/V3Manager.sol";*/
 
 contract Deployment is Script {
-  function run() public {
+  /*function run() public {
     uint256 token0Balance = 1 ether;
     uint256 token1Balance = 5042 ether;
     int24 tick = 85176;
@@ -32,5 +32,5 @@ contract Deployment is Script {
     console.log("token1 address: ", address(token1));
     console.log("Pool address: ", address(pool));
     console.log("Manager address: ", address(manager));
-  }
+  }*/
 }

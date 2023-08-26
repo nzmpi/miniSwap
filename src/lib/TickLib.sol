@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 library TickLib {
   struct Tick {
@@ -17,7 +17,7 @@ library TickLib {
     //uint128 liquidityAfter = liquidityBefore + newLiquidity;
 
     if (liquidityBefore == 0) {
-      tick_.initialized = true;      
+      tick_.initialized = true;   
     }
 
     tick_.liquidity = liquidityBefore + newLiquidity;
