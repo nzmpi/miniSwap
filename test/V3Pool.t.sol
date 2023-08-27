@@ -10,6 +10,7 @@ contract V3PoolTest is Test {
   ERC20Test token1;
   V3Pool pool;
   bool shouldTransferInCallback;
+  bool shouldTransferInCallbackToken0;
 
   struct TestParams {
     uint128 token0Balance;   
@@ -71,6 +72,38 @@ contract V3PoolTest is Test {
     assertEq(pool.tick(), 85176, "Incorrect tick");
     assertEq(pool.liquidity(), 1517882343751509868544, "Incorrect liquidity");
 
+  }
+
+  function testInvalidMint() public {
+    pool = new V3Pool(
+      address(token0),
+      address(token1),
+      1,
+      1
+    );
+
+    vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+    pool.mint(address(0), 1, 1, 2, "");
+
+    vm.expectRevert(abi.encodeWithSignature("ZeroLiquidity()"));
+    pool.mint(address(this), 0, 1, 2, "");
+
+    vm.expectRevert(abi.encodeWithSignature("InvalidTickRange()"));
+    pool.mint(address(this), 1, -887273, 0, "");
+
+    vm.expectRevert(abi.encodeWithSignature("InvalidTickRange()"));
+    pool.mint(address(this), 1, 0, 887273, "");
+
+    vm.expectRevert(abi.encodeWithSignature("InvalidTickRange()"));
+    pool.mint(address(this), 1, 2, 1, "");
+
+    vm.expectRevert(abi.encodeWithSignature("InsufficientAmount()"));
+    pool.mint(address(this), 1, 1, 2, "");
+
+    token0.mint(address(this), 0.99897661834742528 ether);
+    shouldTransferInCallbackToken0 = true;
+    vm.expectRevert(abi.encodeWithSignature("InsufficientAmount()"));
+    pool.mint(address(this), 1, 1, 2, "");
   }
 
   /*function testSwapBuyToken0() public {
@@ -191,6 +224,10 @@ contract V3PoolTest is Test {
       );*/
       token0.transfer(msg.sender, amount0);
       token1.transfer(msg.sender, amount1);
+    }
+
+    if (shouldTransferInCallbackToken0) {
+      token0.transfer(msg.sender, amount0);
     }
   }
 
