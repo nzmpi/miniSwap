@@ -106,7 +106,7 @@ contract V3PoolTest is Test {
     pool.mint(address(this), 1, 1, 2, "");
   }
 
-  /*function testSwapBuyToken0() public {
+  function testSwapBuyToken0() public {
     TestParams memory params = TestParams({
       token0Balance: 1 ether,
       token1Balance: 5000 ether,
@@ -114,28 +114,28 @@ contract V3PoolTest is Test {
       tickLow: 84222,
       tickHigh: 86129,
       liquidity: 1517882343751509868544,
-      shouldTransferInCallback: true,
+      shouldTransferInCallback_: true,
       mintLiquidity: true,
       currentSqrtP: 5602277097478614198912276234240
     });
 
     (uint256 poolBalance0, uint256 poolBalance1) = setupTest(params);
     token1.mint(address(this), 42 ether);
-    int256 balance0Before = int256(token0.balanceOf(address(this)));
+    uint256 balance0Before = token0.balanceOf(address(this));
     
-    bytes memory data = abi.encodePacked(
+    /*bytes memory data = abi.encodePacked(
       address(token0),
       address(token1),
       address(this)
-    );
-    (int256 amount0, int256 amount1) = pool.swap(address(this), data);
-    assertEq(amount0, -0.008396714242162444 ether, "Wrong token0 out");
-    assertEq(amount1, 42 ether, "Wrong token1 in");
+    );*/
+    (int256 amount0, int256 amount1) = pool.swap(address(this)/*, data*/);
+    assertEq(amount0, -0.008396714242162444 ether, "Wrong token0 amount");
+    assertEq(amount1, 42 ether, "Wrong token1 amount");
 
     assertEq(
       token0.balanceOf(address(this)),
-      uint256(balance0Before - amount0),
-      "Wrong balance0Before"
+      balance0Before + uint256(-amount0),
+      "Wrong token0 balance"
     );
     assertEq(
       token1.balanceOf(address(this)),
@@ -145,12 +145,12 @@ contract V3PoolTest is Test {
 
     assertEq(
       token0.balanceOf(address(pool)),
-      uint256(int256(poolBalance0) + amount0),
+      poolBalance0 - uint256(-amount0),
       "Wrong token0 pool balance"
     );
     assertEq(
       token1.balanceOf(address(pool)),
-      uint256(int256(poolBalance1) + amount1),
+      poolBalance1 + uint256(amount1),
       "Wrong token1 pool balance"
     );
 
@@ -159,13 +159,17 @@ contract V3PoolTest is Test {
       5604469350942327889444743441197,
       "Wrong current sqrtPrice"
     );
-    assertEq(pool.tick(), 85184, "Wrong tick");
+    assertEq(
+      pool.tick(), 
+      85184, 
+      "Wrong tick"
+    );
     assertEq(
       pool.liquidity(),
       1517882343751509868544,
       "Wrong liquidity"
     );
-  }*/
+  }
 
 
   function setupTest(TestParams memory params) internal returns (
@@ -231,30 +235,38 @@ contract V3PoolTest is Test {
     }
   }
 
-  /*function v3SwapCallback(
+  function v3SwapCallback(
     int256 amount0, 
-    int256 amount1,
-    bytes calldata data
+    int256 amount1
+    //bytes calldata data
   ) public {
-    V3Pool.CallbackData memory callbackData = abi.decode(
+    /*V3Pool.CallbackData memory callbackData = abi.decode(
       data,
       (V3Pool.CallbackData)
-    );
+    );*/
     if (amount0 > 0) {
-      ERC20(callbackData.token0).transferFrom(
+      /*ERC20(callbackData.token0).transferFrom(
         callbackData.sender, 
+        msg.sender,
+        uint256(amount0)
+      );*/
+      token0.transfer( 
         msg.sender,
         uint256(amount0)
       );
     }
 
     if (amount1 > 0) {
-      ERC20(callbackData.token1).transferFrom(
+      /*ERC20(callbackData.token1).transferFrom(
         callbackData.sender, 
+        msg.sender,
+        uint256(amount1)
+      );*/
+      token1.transfer( 
         msg.sender,
         uint256(amount1)
       );
     }
-  }*/
+  }
 
 }

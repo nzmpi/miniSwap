@@ -103,38 +103,36 @@ contract V3Pool is Errors, Events {
 
   }
 
-  /*function swap(address receiver, bytes calldata data) external returns (int256 amount0, int256 amount1) {
-    int24 nextTick = 85184;
-    uint160 nextPrice = 5604469350942327889444743441197;
+  function swap(address receiver/*, bytes calldata data*/) external returns (int256 amount0, int256 amount1) {
+    int24 newTick = 85184;
+    uint160 newPrice = 5604469350942327889444743441197;
     amount0 = -0.008396714242162444 ether;
     amount1 = 42 ether;
 
-    tick = nextTick;
-    sqrtPriceX96 = nextPrice;
+    tick = newTick;
+    sqrtPriceX96 = newPrice;
 
-    ERC20(token0).transfer(receiver, uint256(-amount0));
+    IERC20(token0).transfer(receiver, uint256(-amount0));
 
     uint256 balance1Before = balance(1);
     IV3SwapCallback(msg.sender).v3SwapCallback(
       amount0,
-      amount1,
-      data
+      amount1
+      //data
     );
-
     if (balance1Before + uint256(amount1) < balance(1))
-      revert InsufficientInputAmount();
+      revert InsufficientAmount();
 
     emit Swap(
       msg.sender, 
       receiver, 
       amount0, 
       amount1, 
-      nextPrice, 
-      nextTick, 
+      newPrice, 
+      newTick, 
       liquidity
     );
-
-  }*/
+  }
 
   function balance(uint256 tokenIndex) internal view returns (uint256) {
     if (tokenIndex == 0) return IERC20(token0).balanceOf(address(this));
