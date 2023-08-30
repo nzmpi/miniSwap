@@ -2,15 +2,16 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import "./ERC20Test.sol";
+import { ERC20Test } from "./ERC20Test.sol";
 import { V3Pool } from "../src/V3Pool.sol";
 
 contract V3PoolTest is Test {
   ERC20Test token0;
   ERC20Test token1;
   V3Pool pool;
-  bool shouldTransferInCallback;
-  bool shouldTransferInCallbackToken0;
+  bool shouldTransferBothTokensInMintCallback;
+  bool shouldTransferOnlyToken0InMintCallback;
+  bool shouldNotTransferToken1InSwapCallback;
 
   struct TestParams {
     uint128 token0Balance;   
@@ -19,9 +20,11 @@ contract V3PoolTest is Test {
     int24 tickLow;
     int24 tickHigh;
     uint128 liquidity;
-    bool shouldTransferInCallback_;
     bool mintLiquidity;
     uint160 currentSqrtP;
+    bool shouldTransferBothTokensInMintCallback_;
+    bool shouldTransferOnlyToken0InMintCallback_;
+    bool shouldNotTransferToken1InSwapCallback_;
   }
 
   /**
@@ -40,9 +43,11 @@ contract V3PoolTest is Test {
       tickLow: 84222,
       tickHigh: 86129,
       liquidity: 1517882343751509868544,
-      shouldTransferInCallback_: true,
       mintLiquidity: true,
-      currentSqrtP: 5602277097478614198912276234240
+      currentSqrtP: 5602277097478614198912276234240,
+      shouldTransferBothTokensInMintCallback_: true,
+      shouldTransferOnlyToken0InMintCallback_: false,
+      shouldNotTransferToken1InSwapCallback_: false
     });
 
     (uint256 poolBalance0, uint256 poolBalance1) = setupTest(params);
@@ -101,7 +106,7 @@ contract V3PoolTest is Test {
     pool.mint(address(this), 1, 1, 2, "");
 
     token0.mint(address(this), 0.99897661834742528 ether);
-    shouldTransferInCallbackToken0 = true;
+    shouldTransferOnlyToken0InMintCallback = true;
     vm.expectRevert(abi.encodeWithSignature("InsufficientAmount()"));
     pool.mint(address(this), 1, 1, 2, "");
   }
@@ -114,21 +119,23 @@ contract V3PoolTest is Test {
       tickLow: 84222,
       tickHigh: 86129,
       liquidity: 1517882343751509868544,
-      shouldTransferInCallback_: true,
       mintLiquidity: true,
-      currentSqrtP: 5602277097478614198912276234240
+      currentSqrtP: 5602277097478614198912276234240,
+      shouldTransferBothTokensInMintCallback_: true,
+      shouldTransferOnlyToken0InMintCallback_: false,
+      shouldNotTransferToken1InSwapCallback_: false
     });
 
     (uint256 poolBalance0, uint256 poolBalance1) = setupTest(params);
     token1.mint(address(this), 42 ether);
     uint256 balance0Before = token0.balanceOf(address(this));
     
-    /*bytes memory data = abi.encodePacked(
+    bytes memory data = abi.encodePacked(
       address(token0),
       address(token1),
       address(this)
-    );*/
-    (int256 amount0, int256 amount1) = pool.swap(address(this)/*, data*/);
+    );    
+    (int256 amount0, int256 amount1) = pool.swap(address(this), data);
     assertEq(amount0, -0.008396714242162444 ether, "Wrong token0 amount");
     assertEq(amount1, 42 ether, "Wrong token1 amount");
 
@@ -171,6 +178,33 @@ contract V3PoolTest is Test {
     );
   }
 
+  function testInvalidSwapBuyToken0() public {
+    TestParams memory params = TestParams({
+      token0Balance: 1 ether,
+      token1Balance: 5000 ether,
+      currentTick: 85176,
+      tickLow: 84222,
+      tickHigh: 86129,
+      liquidity: 1517882343751509868544,
+      mintLiquidity: true,
+      currentSqrtP: 5602277097478614198912276234240,
+      shouldTransferBothTokensInMintCallback_: true,
+      shouldTransferOnlyToken0InMintCallback_: false,
+      shouldNotTransferToken1InSwapCallback_: true
+    });
+
+    setupTest(params);
+    token1.mint(address(this), 42 ether);    
+
+    bytes memory data = abi.encodePacked(
+      address(token0),
+      address(token1),
+      address(this)
+    );
+    vm.expectRevert(abi.encodeWithSignature("InsufficientAmount()"));
+    pool.swap(address(this), data);
+  }
+
 
   function setupTest(TestParams memory params) internal returns (
     uint256 poolBalance0, 
@@ -186,7 +220,9 @@ contract V3PoolTest is Test {
       params.currentSqrtP
     );
 
-    shouldTransferInCallback = params.shouldTransferInCallback_;
+    shouldTransferBothTokensInMintCallback = params.shouldTransferBothTokensInMintCallback_;
+    shouldTransferOnlyToken0InMintCallback = params.shouldTransferOnlyToken0InMintCallback_;
+    shouldNotTransferToken1InSwapCallback = params.shouldNotTransferToken1InSwapCallback_;
     
     bytes memory data = abi.encodePacked(
       address(token0),
@@ -210,63 +246,61 @@ contract V3PoolTest is Test {
     uint256 amount1,
     bytes calldata data
   ) external {
-    if (shouldTransferInCallback) {
-      /*V3Pool.CallbackData memory callbackData = abi.decode(
-        data,
-        (V3Pool.CallbackData)
-      );
+    V3Pool.CallbackData memory callbackData = abi.decode(
+      data,
+      (V3Pool.CallbackData)
+    );
 
-      ERC20(callbackData.token0).transferFrom(
+    if (shouldTransferBothTokensInMintCallback) {
+      ERC20Test(callbackData.token0).transferFrom(
         callbackData.sender, 
         msg.sender,
         amount0
       );
-      ERC20(callbackData.token1).transferFrom(
+      ERC20Test(callbackData.token1).transferFrom(
         callbackData.sender, 
         msg.sender,
         amount1
-      );*/
-      token0.transfer(msg.sender, amount0);
-      token1.transfer(msg.sender, amount1);
+      );
     }
 
-    if (shouldTransferInCallbackToken0) {
-      token0.transfer(msg.sender, amount0);
+    if (shouldTransferOnlyToken0InMintCallback) {
+      ERC20Test(callbackData.token0).transferFrom(
+        callbackData.sender, 
+        msg.sender,
+        amount0
+      );
     }
   }
 
   function v3SwapCallback(
     int256 amount0, 
-    int256 amount1
-    //bytes calldata data
+    int256 amount1,
+    bytes calldata data
   ) public {
-    /*V3Pool.CallbackData memory callbackData = abi.decode(
-      data,
-      (V3Pool.CallbackData)
-    );*/
-    if (amount0 > 0) {
-      /*ERC20(callbackData.token0).transferFrom(
-        callbackData.sender, 
-        msg.sender,
-        uint256(amount0)
-      );*/
-      token0.transfer( 
-        msg.sender,
-        uint256(amount0)
+    if (shouldNotTransferToken1InSwapCallback) {
+      return;
+    } else {
+      V3Pool.CallbackData memory callbackData = abi.decode(
+        data,
+        (V3Pool.CallbackData)
       );
-    }
 
-    if (amount1 > 0) {
-      /*ERC20(callbackData.token1).transferFrom(
-        callbackData.sender, 
-        msg.sender,
-        uint256(amount1)
-      );*/
-      token1.transfer( 
-        msg.sender,
-        uint256(amount1)
-      );
+      if (amount0 > 0) {
+        ERC20Test(callbackData.token0).transferFrom(
+          callbackData.sender, 
+          msg.sender,
+          uint256(amount0)
+        );
+      }
+
+      if (amount1 > 0) {
+        ERC20Test(callbackData.token1).transferFrom(
+          callbackData.sender, 
+          msg.sender,
+          uint256(amount1)
+        );
+      }
     }
   }
-
 }

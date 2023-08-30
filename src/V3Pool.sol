@@ -103,7 +103,10 @@ contract V3Pool is Errors, Events {
 
   }
 
-  function swap(address receiver/*, bytes calldata data*/) external returns (int256 amount0, int256 amount1) {
+  function swap(
+    address receiver, 
+    bytes calldata data
+  ) external returns (int256 amount0, int256 amount1) {
     int24 newTick = 85184;
     uint160 newPrice = 5604469350942327889444743441197;
     amount0 = -0.008396714242162444 ether;
@@ -117,10 +120,10 @@ contract V3Pool is Errors, Events {
     uint256 balance1Before = balance(1);
     IV3SwapCallback(msg.sender).v3SwapCallback(
       amount0,
-      amount1
-      //data
+      amount1,
+      data
     );
-    if (balance1Before + uint256(amount1) < balance(1))
+    if (balance(1) < balance1Before + uint256(amount1)) 
       revert InsufficientAmount();
 
     emit Swap(

@@ -1,27 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import "./V3Pool.sol";
+import { V3Pool } from "./V3Pool.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract V3Router {
 
-  /*function mint(
+  function mint(
     address pool,
     int24 tickLow,
     int24 tickHigh,
-    uint128 liquidity,
+    uint128 amount,
     bytes calldata data
   ) external {
     V3Pool(pool).mint(
       msg.sender,
-      liquidity,
+      amount,
       tickLow,
       tickHigh,
       data
     );
   }
 
-  function swap(address pool, bytes calldata data) external {
+  function swap(
+    address pool, 
+    bytes calldata data
+  ) external {
     V3Pool(pool).swap(msg.sender, data);
   }
 
@@ -34,18 +38,18 @@ contract V3Router {
       data,
       (V3Pool.CallbackData)
     );
-
-    ERC20(callbackData.token0).transferFrom(
+      
+    IERC20(callbackData.token0).transferFrom(
       callbackData.sender, 
       msg.sender,
       amount0
     );
-      ERC20(callbackData.token1).transferFrom(
-        callbackData.sender, 
-        msg.sender,
-        amount1
-      );
-    
+
+    IERC20(callbackData.token1).transferFrom(
+      callbackData.sender, 
+      msg.sender,
+      amount1
+    );
   }
 
   function v3SwapCallback(
@@ -57,8 +61,9 @@ contract V3Router {
       data,
       (V3Pool.CallbackData)
     );
+    
     if (amount0 > 0) {
-      ERC20(callbackData.token0).transferFrom(
+      IERC20(callbackData.token0).transferFrom(
         callbackData.sender, 
         msg.sender,
         uint256(amount0)
@@ -66,11 +71,11 @@ contract V3Router {
     }
 
     if (amount1 > 0) {
-      ERC20(callbackData.token1).transferFrom(
+      IERC20(callbackData.token1).transferFrom(
         callbackData.sender, 
         msg.sender,
         uint256(amount1)
       );
     }
-  }*/
+  }
 }
