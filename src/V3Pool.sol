@@ -5,12 +5,16 @@ import "./lib/Events.sol";
 import "./lib/Errors.sol";
 import "./lib/TickLib.sol";
 import "./lib/PositionLib.sol";
+import { TickBitmap } from "./lib/TickBitmap.sol";
+import { AmountMath } from "./lib/AmountMath.sol";
+import "./lib/TickMath.sol";
 import "./interfaces/IV3MintCallback.sol";
 import "./interfaces/IV3SwapCallback.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract V3Pool is Errors, Events {
   using TickLib for mapping (int24 => TickLib.Tick);
+  using TickBitmap for mapping(int16 => uint256);
   using PositionLib for mapping (bytes32 => PositionLib.Position);
   using PositionLib for PositionLib.Position;
 
@@ -25,6 +29,7 @@ contract V3Pool is Errors, Events {
   uint128 public liquidity;
 
   mapping (int24 => TickLib.Tick) public ticks;
+  mapping(int16 => uint256) public tickBitmap;
   mapping (bytes32 => PositionLib.Position) public positions;
 
   struct CallbackData {
@@ -60,8 +65,16 @@ contract V3Pool is Errors, Events {
       tickLow >= tickHigh
     ) revert InvalidTickRange();
 
-    ticks.update(tickLow, amount);
-    ticks.update(tickHigh, amount);
+    bool isLowFlipped = ticks.update(tickLow, amount);
+    bool isHighFlipped = ticks.update(tickHigh, amount);
+
+    if (isLowFlipped) {
+      tickBitmap.flipTick(tickLow, 1);
+    }
+
+    if (isHighFlipped) {
+      tickBitmap.flipTick(tickHigh, 1);
+    }
 
     PositionLib.Position storage position = positions.get(
       owner, 
@@ -70,8 +83,17 @@ contract V3Pool is Errors, Events {
     );
     position.update(amount);
 
-    amount0 = 0.99897661834742528 ether;
-    amount1 = 5000 ether;
+    uint160 price = sqrtPriceX96;
+    amount0 = AmountMath.calcAmount0(
+      price,
+      TickMath.getSqrtRatioAtTick(tickLow),
+      amount
+    );
+    amount1 = AmountMath.calcAmount0(
+      price,
+      TickMath.getSqrtRatioAtTick(tickHigh),
+      amount
+    );
 
     liquidity = liquidity + amount;
 

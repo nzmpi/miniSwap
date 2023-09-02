@@ -11,15 +11,17 @@ library TickLib {
     mapping (int24 => Tick) storage self,
     int24 tick,
     uint128 newLiquidity
-  ) internal {
+  ) internal returns (bool flipped) {
     Tick storage tick_ = self[tick];
     uint128 liquidityBefore = tick_.liquidity;
-    //uint128 liquidityAfter = liquidityBefore + newLiquidity;
+    uint128 liquidityAfter = liquidityBefore + newLiquidity;
 
     if (liquidityBefore == 0) {
-      tick_.initialized = true;   
+      tick_.initialized = true;
     }
 
-    tick_.liquidity = liquidityBefore + newLiquidity;
+    flipped = (liquidityBefore == 0) != (liquidityAfter == 0);
+
+    tick_.liquidity = liquidityAfter;
   }
 }
