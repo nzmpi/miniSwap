@@ -37,13 +37,28 @@ contract V3Pool is Errors, Events {
     address token1;
     address sender;
   }
+
+  struct SwapState {
+    uint256 amountRemaining;
+    uint256 amountCalculated;
+    uint160 sqrtPriceX96Swap;
+    int24 tickSwap;
+  }
+
+  struct StepState {
+    uint160 sqrtPriceStartX96;
+    int24 nextTick;
+    uint160 sqrtPriceNextX96;
+    uint256 amountIn;
+    uint256 amountOut;
+  }
   
   constructor(
     address _token0, 
     address _token1,
     int24 _tick,
     uint160 _sqrtPriceX96
-  ) {
+  ) payable {
     token0 = _token0;
     token1 = _token1;
     tick = _tick;
@@ -126,7 +141,9 @@ contract V3Pool is Errors, Events {
   }
 
   function swap(
-    address receiver, 
+    address receiver,
+    bool token0ForToken1,
+    uint256 amount,
     bytes calldata data
   ) external returns (int256 amount0, int256 amount1) {
     int24 newTick = 85184;
@@ -136,6 +153,13 @@ contract V3Pool is Errors, Events {
 
     tick = newTick;
     sqrtPriceX96 = newPrice;
+
+    SwapState memory state = SwapState({
+      amountRemaining: amount,
+      amountCalculated: 0,
+      sqrtPriceX96Swap: sqrtPriceX96,
+      tickSwap: tick
+    });
 
     IERC20(token0).transfer(receiver, uint256(-amount0));
 
