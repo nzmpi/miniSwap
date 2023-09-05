@@ -8,6 +8,7 @@ import "./lib/PositionLib.sol";
 import { TickBitmap } from "./lib/TickBitmap.sol";
 import { AmountMath } from "./lib/AmountMath.sol";
 import "./lib/TickMath.sol";
+import { SwapMath } from "./lib/SwapMath.sol";
 import "./interfaces/IV3MintCallback.sol";
 import "./interfaces/IV3SwapCallback.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -142,7 +143,7 @@ contract V3Pool is Errors, Events {
 
   function swap(
     address receiver,
-    bool token0ForToken1,
+    bool zeroForOne,
     uint256 amount,
     bytes calldata data
   ) external returns (int256 amount0, int256 amount1) {
@@ -160,6 +161,31 @@ contract V3Pool is Errors, Events {
       sqrtPriceX96Swap: sqrtPriceX96,
       tickSwap: tick
     });
+
+    StepState memory step;
+    while (state.amountRemaining > 0) {
+      delete step;
+      step.sqrtPriceStartX96 = state.sqrtPriceX96Swap;
+      
+      (step.nextTick,) = tickBitmap.nextInitializedTickWithinOneWord(
+        state.tickSwap,
+        1,
+        zeroForOne
+      );
+
+      step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.nextTick);
+
+      (state.sqrtPriceX96Swap, step.amountIn, step.amountOut) = SwapMath.computeSwapStep(
+        state.sqrtPriceX96Swap,
+        step.sqrtPriceNextX96,
+        liquidity,
+        state.amountRemaining
+      );
+
+      state.amountRemaining -= step.amountIn;
+      state.amountCalculated += step.amountOut;
+      state.tickSwap = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96Swap);
+    } 
 
     IERC20(token0).transfer(receiver, uint256(-amount0));
 
